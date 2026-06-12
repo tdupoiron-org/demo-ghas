@@ -26,6 +26,7 @@ import path from 'path'
 import morgan from 'morgan'
 import colors from 'colors/safe'
 import * as utils from './lib/utils'
+import rateLimit from 'express-rate-limit';
 
 const startTime = Date.now()
 const finale = require('finale-rest')
@@ -625,7 +626,11 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.get('/snippets/:challenge', vulnCodeSnippet.serveCodeSnippet())
   app.post('/snippets/verdict', vulnCodeSnippet.checkVulnLines())
   app.get('/snippets/fixes/:key', vulnCodeFixes.serveCodeFixes())
-  app.post('/snippets/fixes', vulnCodeFixes.checkCorrectFix())
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+  });
+  app.post('/snippets/fixes', limiter, vulnCodeFixes.checkCorrectFix())
 
   app.use(angular())
 
